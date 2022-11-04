@@ -1,5 +1,7 @@
 # Homophily-impacts-the-success-of-vaccine-roll-outs
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6108284.svg)](https://doi.org/10.5281/zenodo.6108284)
+
 'MeanField.jl' allows to reproduce all the mean-field results.
 
 The used temporal network is encoded as a time-ordered edgelist in the folder 'data'.
