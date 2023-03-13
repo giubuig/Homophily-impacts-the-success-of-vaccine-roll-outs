@@ -1,6 +1,4 @@
-using LinearAlgebra, SparseArrays
-using Random, Statistics, StatsBase
-using DelimitedFiles, JLD
+using LinearAlgebra, Random, StatsBase
 
 function montecarlo(edges_t, Vᵢ, β, μ, ϵ, p₀)
     N = length(Vᵢ)
@@ -77,62 +75,4 @@ function montecarlo(edges_t, Vᵢ, β, μ, ϵ, p₀)
     end
 
     return(Rtot, Imax)
-end
-
-
-
-#---  simulations
-
-temporal_edges = DelimitedFiles.readdlm("data/t_edges_dbm74.dat")
-secs_per_step = 300
-temporal_edges[:,1] = temporal_edges[:,1]/secs_per_step .+ 1    #number of unique timestamps
-
-weights_mtx, w_edgelist = AggregateTemporalEdgeList(temporal_edges)
-N = size(weights_mtx,1)
-strengths = [sum(weights_mtx[i,:]) for i in 1:N]
-κ = mean((strengths./size(unique(temporal_edges[:,1]),1)).^2)/mean(strengths./size(unique(temporal_edges[:,1]),1))
-
-R0 = 6.
-μ = secs_per_step/(3600*24*7.5)
-β = μ*R0/κ
-ϵ = 0.6
-# ϵ = 0.8
-# ϵ = 1.0
-p₀ = 10/N
-
-V = 0.5
-Cov = load("data/V05_dbm74.jld")["storeV05"]
-
-n_runs = length(Cov[1:500,1,1])
-n_alpha = length(Cov[1,:,1])
-αs = range(0.3, 1.0, length = n_alpha)
-n_runs_mc = 40
-
-results = zeros(n_alpha, n_runs, n_runs_mc, 2)
-res_inter = zeros(n_alpha, n_runs, 2)
-resAttack_mc = zeros(Float64,length(αs),3,2)
-
-@progress for indx in 1:length(αs)
-    α_ = zeros(Float64,n_runs)
-    @progress for r in 1:n_runs
-        Vᵢ = Cov[r,indx,:]
-        @progress for r_ in 1:n_runs_mc
-            res = montecarlo(temporal_edges, Vᵢ, β, μ, ϵ, p₀)./N
-            results[indx, r, r_, 1] = res[1]
-            results[indx, r, r_, 2] = res[2]
-        end
-    end
-end
-for i in 1:n_alpha
-    for j in 1:n_runs
-        res_inter[i,j,1] = mean(results[i,j,:,1])
-        res_inter[i,j,2] = mean(results[i,j,:,2])
-    end
-end
-for i in 1:n_alpha
-    for j in 1:2
-        resAttack_mc[i,1,j] = median(res_inter[i,:,j])
-        resAttack_mc[i,2,j] = quantile(res_inter[i,:,j], 0.25)
-        resAttack_mc[i,3,j] = quantile(res_inter[i,:,j], 0.75)
-    end
 end
